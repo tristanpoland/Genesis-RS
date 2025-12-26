@@ -265,12 +265,12 @@ impl ExodusManager {
     }
 
     /// Export exodus data to JSON file.
-    pub fn export(&self, env_name: &EnvName, output_path: impl AsRef<Path>) -> Result<()> {
+    pub fn export(&self, env_name: &EnvName, output_path: &Path) -> Result<()> {
         let data = self.load(env_name)?
             .ok_or_else(|| GenesisError::Environment(format!("No exodus data found for {}", env_name)))?;
 
         data.save(output_path)?;
-        info!("Exported exodus data for {} to {:?}", env_name, output_path.as_ref());
+        info!("Exported exodus data for {} to {:?}", env_name, output_path);
 
         Ok(())
     }

@@ -35,14 +35,14 @@ pub trait KitProvider: Send + Sync {
         &self,
         kit_name: &str,
         version: &SemVer,
-        install_dir: impl AsRef<Path> + Send,
+        install_dir: &Path,
     ) -> Result<Box<dyn Kit>>;
 
     /// Download and install the latest kit version.
     async fn install_latest(
         &self,
         kit_name: &str,
-        install_dir: impl AsRef<Path> + Send,
+        install_dir: &Path,
     ) -> Result<Box<dyn Kit>> {
         let version = self.latest_version(kit_name).await?;
         self.install_kit(kit_name, &version, install_dir).await
@@ -57,15 +57,23 @@ pub struct GithubProvider {
 
 impl GithubProvider {
     /// Create a new GitHub provider for a specific owner/organization.
-    pub fn new(owner: impl Into<String>, token: Option<String>) -> Self {
-        Self {
-            client: GithubClient::new(token),
-            owner: owner.into(),
-        }
+    pub fn new(owner: impl Into<String>, token: Option<String>) -> Result<Self> {
+        let owner = owner.into();
+        let config = genesis_services::github::GithubConfig {
+            api_url: "https://api.github.com".to_string(),
+            token,
+            org: owner.clone(),
+        };
+        let client = GithubClient::new(config)?;
+
+        Ok(Self {
+            client,
+            owner,
+        })
     }
 
     /// Create a provider for the Genesis Community organization.
-    pub fn genesis_community(token: Option<String>) -> Self {
+    pub fn genesis_community(token: Option<String>) -> Result<Self> {
         Self::new("genesis-community", token)
     }
 
@@ -86,7 +94,7 @@ impl GithubProvider {
         let tag = format!("v{}", version);
 
         let release = self.client
-            .get_release_by_tag(&self.owner, &repo, &tag)
+            .get_release(&repo, &tag)
             .await?;
 
         let tarball_name = format!("{}-{}.tar.gz", kit_name, version);
@@ -123,7 +131,7 @@ impl KitProvider for GithubProvider {
         let repo = self.repo_name(kit_name);
 
         info!("Fetching releases for {}/{}", self.owner, repo);
-        let releases = self.client.list_releases(&self.owner, &repo).await?;
+        let releases = self.client.list_releases(&repo).await?;
 
         let mut versions = Vec::new();
         for release in releases {
@@ -150,9 +158,8 @@ impl KitProvider for GithubProvider {
         &self,
         kit_name: &str,
         version: &SemVer,
-        install_dir: impl AsRef<Path> + Send,
+        install_dir: &Path,
     ) -> Result<Box<dyn Kit>> {
-        let install_dir = install_dir.as_ref();
 
         info!("Installing kit {}/{} version {}", self.owner, kit_name, version);
 
@@ -187,10 +194,10 @@ pub struct GenesisCommunityProvider {
 
 impl GenesisCommunityProvider {
     /// Create a new Genesis Community provider.
-    pub fn new(token: Option<String>) -> Self {
-        Self {
-            inner: GithubProvider::genesis_community(token),
-        }
+    pub fn new(token: Option<String>) -> Result<Self> {
+        Ok(Self {
+            inner: GithubProvider::genesis_community(token)?,
+        })
     }
 }
 
@@ -212,7 +219,7 @@ impl KitProvider for GenesisCommunityProvider {
         &self,
         kit_name: &str,
         version: &SemVer,
-        install_dir: impl AsRef<Path> + Send,
+        install_dir: &Path,
     ) -> Result<Box<dyn Kit>> {
         self.inner.install_kit(kit_name, version, install_dir).await
     }
@@ -255,7 +262,7 @@ impl CustomProvider {
             .to_string();
 
         Ok(Self {
-            inner: GithubProvider::new(owner, token),
+            inner: GithubProvider::new(owner, token)?,
             repo_name: repo,
         })
     }
@@ -278,7 +285,7 @@ impl KitProvider for CustomProvider {
         }
 
         let full_repo = self.full_repo_name();
-        match self.inner.client.get_repository(self.inner.name(), &full_repo).await {
+        match self.inner.client.get_repository(&self.inner.owner, &full_repo).await {
             Ok(_) => Ok(true),
             Err(GenesisError::NotFound(_)) => Ok(false),
             Err(e) => Err(e),
@@ -294,7 +301,7 @@ impl KitProvider for CustomProvider {
         }
 
         let full_repo = self.full_repo_name();
-        let releases = self.inner.client.list_releases(self.inner.name(), &full_repo).await?;
+        let releases = self.inner.client.list_releases(&full_repo).await?;
 
         let mut versions = Vec::new();
         for release in releases {
@@ -317,7 +324,7 @@ impl KitProvider for CustomProvider {
         &self,
         kit_name: &str,
         version: &SemVer,
-        install_dir: impl AsRef<Path> + Send,
+        install_dir: &Path,
     ) -> Result<Box<dyn Kit>> {
         if kit_name != self.repo_name {
             return Err(GenesisError::Kit(format!(
@@ -342,8 +349,8 @@ impl ProviderFactory {
     }
 
     /// Create the default Genesis Community provider.
-    pub fn default_provider(&self) -> Box<dyn KitProvider> {
-        Box::new(GenesisCommunityProvider::new(self.default_token.clone()))
+    pub fn default_provider(&self) -> Result<Box<dyn KitProvider>> {
+        Ok(Box::new(GenesisCommunityProvider::new(self.default_token.clone())?))
     }
 
     /// Create a provider from a URL or organization name.
@@ -356,7 +363,7 @@ impl ProviderFactory {
         if source.contains('/') {
             Ok(Box::new(CustomProvider::from_url(source, self.default_token.clone())?))
         } else {
-            Ok(Box::new(GithubProvider::new(source, self.default_token.clone())))
+            Ok(Box::new(GithubProvider::new(source, self.default_token.clone())?))
         }
     }
 
@@ -374,7 +381,10 @@ impl ProviderFactory {
         }
 
         if providers.is_empty() {
-            providers.push(self.default_provider());
+            match self.default_provider() {
+                Ok(provider) => providers.push(provider),
+                Err(e) => warn!("Failed to create default provider: {}", e),
+            }
         }
 
         ProviderChain { providers }
@@ -455,7 +465,7 @@ impl ProviderChain {
         &self,
         kit_name: &str,
         version: &SemVer,
-        install_dir: impl AsRef<Path> + Send,
+        install_dir: &Path,
     ) -> Result<Box<dyn Kit>> {
         let provider = self.find_provider(kit_name).await?;
         provider.install_kit(kit_name, version, install_dir).await
@@ -465,7 +475,7 @@ impl ProviderChain {
     pub async fn install_latest(
         &self,
         kit_name: &str,
-        install_dir: impl AsRef<Path> + Send,
+        install_dir: &Path,
     ) -> Result<Box<dyn Kit>> {
         let provider = self.find_provider(kit_name).await?;
         provider.install_latest(kit_name, install_dir).await

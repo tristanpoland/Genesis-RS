@@ -118,7 +118,7 @@ impl ManifestTransformer {
     }
 
     /// Get value at a dot-notation path.
-    fn get_path(&self, value: &YamlValue, path: &str) -> Option<&YamlValue> {
+    fn get_path<'a>(&self, value: &'a YamlValue, path: &str) -> Option<&'a YamlValue> {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = value;
 

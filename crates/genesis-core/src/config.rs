@@ -42,7 +42,7 @@ use std::path::{Path, PathBuf};
 use std::fs;
 
 /// Configuration layer priority
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ConfigLayer {
     /// Default values
     Default = 0,
@@ -58,6 +58,7 @@ pub enum ConfigLayer {
 ///
 /// This is the low-level configuration type. For specific configuration
 /// types, see `GlobalConfig` and `RepoConfig`.
+#[derive(Clone, Debug)]
 pub struct Config {
     layers: HashMap<ConfigLayer, Value>,
     file_path: Option<PathBuf>,
@@ -124,7 +125,7 @@ impl Config {
 
         let set_layer = self.layers.entry(ConfigLayer::Set).or_insert(Value::Object(Default::default()));
 
-        self.set_value_at_path(set_layer, key, value)?;
+        Self::set_value_at_path_impl(set_layer, key, value)?;
 
         if self.auto_save {
             self.save()?;
@@ -151,11 +152,44 @@ impl Config {
         Ok(())
     }
 
+    /// Get merged data from all layers.
+    fn merged_data(&self) -> Value {
+        let layers = [
+            ConfigLayer::Default,
+            ConfigLayer::Loaded,
+            ConfigLayer::Set,
+            ConfigLayer::Environment,
+        ];
+
+        let mut merged = Value::Object(serde_json::Map::new());
+
+        for layer in &layers {
+            if let Some(layer_data) = self.layers.get(layer) {
+                merged = crate::util::data::deep_merge(merged, layer_data.clone());
+            }
+        }
+
+        merged
+    }
+
     /// Validate configuration against schema (if set).
     pub fn validate(&self) -> Result<()> {
-        if let Some(_schema) = &self.schema {
-            // TODO: Implement JSON schema validation
-            // using jsonschema crate
+        if let Some(schema) = &self.schema {
+            let instance = self.merged_data();
+
+            let compiled = jsonschema::JSONSchema::compile(schema)
+                .map_err(|e| GenesisError::Config(format!("Invalid schema: {}", e)))?;
+
+            let result = compiled.validate(&instance);
+            if let Err(errors) = result {
+                let error_msgs: Vec<String> = errors
+                    .map(|e| format!("{}", e))
+                    .collect();
+                return Err(GenesisError::Config(format!(
+                    "Validation failed: {}",
+                    error_msgs.join(", ")
+                )));
+            }
         }
         Ok(())
     }
@@ -173,7 +207,7 @@ impl Config {
     }
 
     // Helper: Get value at dotted path
-    fn get_value_at_path(&self, data: &Value, path: &str) -> Option<&Value> {
+    fn get_value_at_path<'a>(&self, data: &'a Value, path: &str) -> Option<&'a Value> {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = data;
 
@@ -185,18 +219,21 @@ impl Config {
     }
 
     // Helper: Set value at dotted path
-    fn set_value_at_path(&self, data: &mut Value, path: &str, value: Value) -> Result<()> {
+    fn set_value_at_path_impl(data: &mut Value, path: &str, value: Value) -> Result<()> {
         let parts: Vec<&str> = path.split('.').collect();
 
         if parts.is_empty() {
             return Err(GenesisError::Config("Empty path".to_string()));
         }
 
-        // Navigate to parent
+        // Navigate to parent, creating intermediate objects as needed
         let mut current = data;
         for part in &parts[..parts.len() - 1] {
             if !current.is_object() {
                 *current = Value::Object(Default::default());
+            }
+            if current.get(part).is_none() {
+                current.as_object_mut().unwrap().insert(part.to_string(), Value::Object(Default::default()));
             }
             current = current.get_mut(part).unwrap();
         }
@@ -269,8 +306,9 @@ impl GlobalConfig {
     /// Load global configuration from specific path.
     pub fn load_from(path: impl AsRef<Path>) -> Result<Self> {
         let config = Config::load(path)?;
-        // TODO: Convert Config to GlobalConfig
-        Ok(Self::default())
+        let global_config: GlobalConfig = serde_json::from_value(config.merged_data())
+            .map_err(|e| GenesisError::Config(format!("Failed to parse global config: {}", e)))?;
+        Ok(global_config)
     }
 
     /// Get the default path for global configuration.
@@ -339,9 +377,15 @@ impl RepoConfig {
     pub fn load(repo_path: impl AsRef<Path>) -> Result<Self> {
         let config_path = repo_path.as_ref().join(".genesis").join("config");
         let config = Config::load(config_path)?;
-        // TODO: Convert Config to RepoConfig
-        Ok(Self {
-            deployment_type: "unknown".to_string(),
+        let repo_config: RepoConfig = serde_json::from_value(config.merged_data())
+            .map_err(|e| GenesisError::Config(format!("Failed to parse repo config: {}", e)))?;
+        Ok(repo_config)
+    }
+
+    /// Load with fallback to defaults
+    pub fn load_or_default(repo_path: impl AsRef<Path>) -> Self {
+        Self::load(&repo_path).unwrap_or_else(|_| Self {
+            deployment_type: "bosh".to_string(),
             version: 2,
             minimum_version: None,
             creator_version: None,

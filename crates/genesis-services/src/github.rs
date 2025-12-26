@@ -94,6 +94,31 @@ impl GithubClient {
         Ok(release)
     }
 
+    /// Check if a repository exists.
+    pub async fn get_repository(&self, owner: &str, repo: &str) -> Result<Repository> {
+        let url = format!(
+            "{}/repos/{}/{}",
+            self.config.api_url, owner, repo
+        );
+
+        let mut req = self.client.get(&url);
+        if let Some(token) = &self.config.token {
+            req = req.header(header::AUTHORIZATION, format!("token {}", token));
+        }
+
+        let response = req.send().await
+            .map_err(|e| GenesisError::Other(format!("Failed to get repository: {}", e)))?;
+
+        if response.status() == 404 {
+            return Err(GenesisError::NotFound(format!("Repository not found: {}/{}", owner, repo)));
+        }
+
+        let repository: Repository = response.json().await
+            .map_err(|e| GenesisError::Other(format!("Failed to parse repository: {}", e)))?;
+
+        Ok(repository)
+    }
+
     /// Download a release asset.
     pub async fn download_asset(&self, asset_url: &str, dest: &PathBuf) -> Result<()> {
         let mut req = self.client.get(asset_url);
@@ -111,6 +136,19 @@ impl GithubClient {
 
         Ok(())
     }
+}
+
+/// GitHub repository information.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Repository {
+    /// Repository name
+    pub name: String,
+    /// Repository full name (owner/repo)
+    pub full_name: String,
+    /// Repository description
+    pub description: Option<String>,
+    /// Default branch
+    pub default_branch: String,
 }
 
 /// GitHub release information.

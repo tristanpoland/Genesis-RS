@@ -33,8 +33,36 @@ pub fn fuzzy_time(timestamp: DateTime<Utc>) -> String {
     }
 }
 
-// TODO: Implement:
-// - Timezone handling
-// - Custom format strings
-// - Duration parsing
-// - Execution timing
+/// Convert UTC timestamp to local time.
+pub fn to_local(timestamp: DateTime<Utc>) -> DateTime<Local> {
+    timestamp.with_timezone(&Local)
+}
+
+/// Parse duration from string (e.g., "1h30m", "90s", "2d").
+pub fn parse_duration(s: &str) -> Option<Duration> {
+    let s = s.trim();
+    if s.ends_with('s') {
+        s[..s.len()-1].parse::<i64>().ok().map(Duration::seconds)
+    } else if s.ends_with('m') {
+        s[..s.len()-1].parse::<i64>().ok().map(Duration::minutes)
+    } else if s.ends_with('h') {
+        s[..s.len()-1].parse::<i64>().ok().map(Duration::hours)
+    } else if s.ends_with('d') {
+        s[..s.len()-1].parse::<i64>().ok().map(Duration::days)
+    } else {
+        s.parse::<i64>().ok().map(Duration::seconds)
+    }
+}
+
+/// Measure execution time of a function.
+pub fn measure<F, R>(f: F) -> (R, Duration)
+where
+    F: FnOnce() -> R,
+{
+    let start = Utc::now();
+    let result = f();
+    let duration = Utc::now().signed_duration_since(start);
+    (result, duration)
+}
+
+// Note: Chrono provides comprehensive timezone support via chrono-tz crate

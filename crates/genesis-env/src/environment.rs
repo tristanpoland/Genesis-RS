@@ -1,7 +1,7 @@
 //! Genesis environment representation and management.
 
-use genesis_types::{GenesisError, Result, EnvName};
-use genesis_kit::{Kit, KitId};
+use genesis_types::{GenesisError, Result, EnvName, KitId};
+use genesis_kit::Kit;
 use genesis_core::config::Config;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};

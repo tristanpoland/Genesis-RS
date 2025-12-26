@@ -66,7 +66,7 @@ impl<'a> ManifestBuilder<'a> {
     }
 
     /// Generate unevaluated manifest.
-    pub async fn generate_unevaluated(self) -> Result<UnevaluatedManifest> {
+    pub async fn generate_unevaluated(&self) -> Result<UnevaluatedManifest> {
         if self.env_files.is_empty() {
             return Err(GenesisError::Manifest("No environment files specified".to_string()));
         }
@@ -82,7 +82,7 @@ impl<'a> ManifestBuilder<'a> {
     }
 
     /// Generate partial manifest (evaluated but not finalized).
-    pub async fn generate_partial(self) -> Result<PartialManifest> {
+    pub async fn generate_partial(&self) -> Result<PartialManifest> {
         let unevaluated = self.generate_unevaluated().await?;
 
         info!("Evaluating manifest");
@@ -90,7 +90,7 @@ impl<'a> ManifestBuilder<'a> {
     }
 
     /// Generate redacted manifest.
-    pub async fn generate_redacted(self, secret_paths: Vec<String>) -> Result<RedactedManifest> {
+    pub async fn generate_redacted(&self, secret_paths: Vec<String>) -> Result<RedactedManifest> {
         let partial = self.generate_partial().await?;
 
         info!("Redacting {} secrets", secret_paths.len());
@@ -98,7 +98,7 @@ impl<'a> ManifestBuilder<'a> {
     }
 
     /// Generate vaultified manifest.
-    pub async fn generate_vaultified(self, secret_paths: Vec<String>) -> Result<VaultifiedManifest> {
+    pub async fn generate_vaultified(&self, secret_paths: Vec<String>) -> Result<VaultifiedManifest> {
         let vault_prefix = self.vault_prefix
             .as_ref()
             .ok_or_else(|| GenesisError::Manifest("Vault prefix not set".to_string()))?;
@@ -110,7 +110,7 @@ impl<'a> ManifestBuilder<'a> {
     }
 
     /// Generate entombed manifest (fully ready for deployment).
-    pub async fn generate_entombed(self, vault_client: &VaultClient) -> Result<EntombedManifest> {
+    pub async fn generate_entombed(&self, vault_client: &VaultClient) -> Result<EntombedManifest> {
         let vault_prefix = self.vault_prefix
             .as_ref()
             .ok_or_else(|| GenesisError::Manifest("Vault prefix not set".to_string()))?;

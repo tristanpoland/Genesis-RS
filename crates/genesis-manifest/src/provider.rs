@@ -4,7 +4,7 @@ use super::types::*;
 use super::spruce::Spruce;
 use super::cache::ManifestCache;
 use super::transform::ManifestTransformer;
-use genesis_types::{GenesisError, Result, EnvName};
+use genesis_types::{GenesisError, Result, EnvName, VaultStore};
 use genesis_kit::{Kit, Blueprint};
 use genesis_services::vault::VaultClient;
 use async_trait::async_trait;

@@ -105,13 +105,14 @@ impl X509Secret {
             .or_else(|| def.remove("ca"))
             .and_then(|v| v.as_str().map(String::from));
 
-        let is_server_cert = def.remove("usage")
-            .and_then(|v| v.as_str())
+        let usage_str = def.remove("usage")
+            .and_then(|v| v.as_str().map(String::from));
+
+        let is_server_cert = usage_str.as_ref()
             .map(|s| s.contains("server"))
             .unwrap_or(true);
 
-        let is_client_cert = def.remove("usage")
-            .and_then(|v| v.as_str())
+        let is_client_cert = usage_str.as_ref()
             .map(|s| s.contains("client"))
             .unwrap_or(false);
 
@@ -185,8 +186,9 @@ impl X509Secret {
 
         let serial = BigNum::from_u32(1)
             .map_err(|e| GenesisError::Secret(format!("Failed to create serial: {}", e)))?;
-        builder.set_serial_number(&serial.to_asn1_integer()
-            .map_err(|e| GenesisError::Secret(format!("Failed to set serial: {}", e)))?)
+        let serial_asn1 = serial.to_asn1_integer()
+            .map_err(|e| GenesisError::Secret(format!("Failed to convert serial to ASN1: {}", e)))?;
+        builder.set_serial_number(&serial_asn1)
             .map_err(|e| GenesisError::Secret(format!("Failed to set serial number: {}", e)))?;
 
         let name = self.build_name()?;
@@ -240,8 +242,9 @@ impl X509Secret {
 
         let serial = BigNum::from_u32(1)
             .map_err(|e| GenesisError::Secret(format!("Failed to create serial: {}", e)))?;
-        builder.set_serial_number(&serial.to_asn1_integer()
-            .map_err(|e| GenesisError::Secret(format!("Failed to set serial: {}", e)))?)
+        let serial_asn1 = serial.to_asn1_integer()
+            .map_err(|e| GenesisError::Secret(format!("Failed to convert serial to ASN1: {}", e)))?;
+        builder.set_serial_number(&serial_asn1)
             .map_err(|e| GenesisError::Secret(format!("Failed to set serial number: {}", e)))?;
 
         let name = self.build_name()?;

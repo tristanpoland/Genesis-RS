@@ -160,10 +160,23 @@ impl SemVer {
     ///
     /// Returns an error if the version string is not valid semver.
     pub fn parse(version: &str) -> Result<Self> {
-        // Basic semver parsing - in production, use semver crate
-        let parts: Vec<&str> = version.split(&['.', '-', '+'][..]).collect();
+        let version = version.trim();
 
-        if parts.len() < 3 {
+        let (version_core, build) = if let Some(pos) = version.find('+') {
+            (& version[..pos], Some(version[pos+1..].to_string()))
+        } else {
+            (version, None)
+        };
+
+        let (version_core, pre_release) = if let Some(pos) = version_core.find('-') {
+            (&version_core[..pos], Some(version_core[pos+1..].to_string()))
+        } else {
+            (version_core, None)
+        };
+
+        let parts: Vec<&str> = version_core.split('.').collect();
+
+        if parts.len() != 3 {
             return Err(GenesisError::Validation(format!(
                 "Invalid semantic version '{}': expected format X.Y.Z",
                 version
@@ -182,13 +195,12 @@ impl SemVer {
             GenesisError::Validation(format!("Invalid patch version: {}", parts[2]))
         })?;
 
-        // TODO: Properly parse pre-release and build metadata
         Ok(Self {
             major,
             minor,
             patch,
-            pre_release: None,
-            build: None,
+            pre_release,
+            build,
         })
     }
 

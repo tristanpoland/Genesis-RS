@@ -1,6 +1,5 @@
 //! Error types for Genesis operations.
 
-use std::fmt;
 use thiserror::Error;
 
 /// The main error type for Genesis operations.
@@ -44,6 +43,10 @@ pub enum GenesisError {
     /// Hook execution error
     #[error("Hook execution error: {0}")]
     Hook(String),
+
+    /// Resource not found
+    #[error("Not found: {0}")]
+    NotFound(String),
 
     /// I/O error
     #[error("IO error: {0}")]

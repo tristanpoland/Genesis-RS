@@ -1,0 +1,7 @@
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[env]
+# Use vcpkg OpenSSL (avoid building from source with Perl)
+VCPKG_ROOT = "C:\\Users\\redst\\vcpkg"
+OPENSSL_NO_VENDOR = "1"

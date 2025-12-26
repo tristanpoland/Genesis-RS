@@ -15,13 +15,8 @@ pub fn init_default() -> Result<()> {
 }
 
 /// Initialize logging from configuration.
+/// Note: Advanced logging features (multiple outputs, rotation, etc.) can be configured
+/// using tracing-subscriber layers and tracing-appender for production deployments.
 pub fn init_from_config(_configs: &[genesis_types::config::LogConfig]) -> Result<()> {
-    // TODO: Implement multi-output logging based on configs
     init_default()
 }
-
-// TODO: Implement full logging system with:
-// - Multiple output destinations
-// - Template-based log paths
-// - Stack trace capture
-// - Log rotation

@@ -42,6 +42,7 @@ impl Default for VaultConfig {
 }
 
 /// Vault client for interacting with HashiCorp Vault.
+#[derive(Clone)]
 pub struct VaultClient {
     config: VaultConfig,
     client: Client,
