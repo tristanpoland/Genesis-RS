@@ -82,6 +82,28 @@ impl EnvName {
 
         prefixes
     }
+
+    /// Extract environment name from a file path.
+    ///
+    /// Attempts to extract the environment name from a file path by:
+    /// 1. Taking the file stem (filename without extension)
+    /// 2. Validating it as an environment name
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the path doesn't contain a valid environment name.
+    pub fn from_path(path: impl AsRef<std::path::Path>) -> Result<Self> {
+        let path = path.as_ref();
+
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| GenesisError::Validation(
+                format!("Cannot extract environment name from path: {:?}", path)
+            ))?;
+
+        Self::new(stem)
+    }
 }
 
 impl fmt::Display for EnvName {
