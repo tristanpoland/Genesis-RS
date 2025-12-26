@@ -1,0 +1,107 @@
+[workspace]
+members = [
+    "crates/genesis-types",
+    "crates/genesis-core",
+    "crates/genesis-manifest",
+    "crates/genesis-services",
+    "crates/genesis-secrets",
+    "crates/genesis-kit",
+    "crates/genesis-env",
+    "crates/genesis-cli",
+]
+resolver = "2"
+
+[workspace.package]
+version = "3.0.0"
+edition = "2021"
+rust-version = "1.75.0"
+license = "MIT"
+repository = "https://github.com/genesis-community/genesis-rs"
+authors = ["Genesis Community <https://genesisproject.io>"]
+keywords = ["bosh", "deployment", "devops", "infrastructure"]
+categories = ["command-line-utilities", "development-tools"]
+
+[workspace.dependencies]
+# Internal crates
+genesis-types = { path = "crates/genesis-types", version = "3.0.0" }
+genesis-core = { path = "crates/genesis-core", version = "3.0.0" }
+genesis-manifest = { path = "crates/genesis-manifest", version = "3.0.0" }
+genesis-services = { path = "crates/genesis-services", version = "3.0.0" }
+genesis-secrets = { path = "crates/genesis-secrets", version = "3.0.0" }
+genesis-kit = { path = "crates/genesis-kit", version = "3.0.0" }
+genesis-env = { path = "crates/genesis-env", version = "3.0.0" }
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+
+# CLI
+clap = { version = "4.4", features = ["derive", "color", "suggestions", "wrap_help"] }
+dialoguer = "0.11"
+indicatif = "0.17"
+
+# Logging/Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+tracing-appender = "0.2"
+
+# HTTP/Networking
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+url = "2.5"
+
+# Crypto
+openssl = { version = "0.10", features = ["vendored"] }
+sha2 = "0.10"
+sha1 = "0.10"
+hex = "0.4"
+base64 = "0.21"
+
+# File/Path handling
+walkdir = "2"
+tempfile = "3"
+tar = "0.4"
+flate2 = "1"
+
+# Date/Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Terminal/UI
+console = "0.15"
+colored = "2.1"
+
+# Misc utilities
+regex = "1"
+lazy_static = "1.4"
+once_cell = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+indexmap = { version = "2", features = ["serde"] }
+
+# Schema validation
+jsonschema = "0.17"
+
+# Testing
+mockall = "0.12"
+proptest = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.test]
+opt-level = 1

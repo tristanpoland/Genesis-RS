@@ -1,0 +1,57 @@
+[package]
+name = "genesis-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Core utilities, configuration, and logging for Genesis"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Internal
+genesis-types = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+
+# Terminal
+console = { workspace = true }
+colored = { workspace = true }
+
+# File handling
+walkdir = { workspace = true }
+tempfile = { workspace = true }
+
+# Date/Time
+chrono = { workspace = true }
+
+# Misc
+regex = { workspace = true }
+once_cell = { workspace = true }
+indexmap = { workspace = true }
+jsonschema = { workspace = true }
+dirs = "5.0"
+parking_lot = "0.12"
+term_size = "0.3"
+
+[dev-dependencies]
+mockall = { workspace = true }
+proptest = { workspace = true }
