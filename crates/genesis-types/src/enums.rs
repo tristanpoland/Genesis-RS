@@ -107,6 +107,30 @@ impl fmt::Display for HookType {
     }
 }
 
+impl FromStr for HookType {
+    type Err = GenesisError;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s.to_lowercase().as_str() {
+            "new" => Ok(HookType::New),
+            "features" => Ok(HookType::Features),
+            "blueprint" => Ok(HookType::Blueprint),
+            "info" => Ok(HookType::Info),
+            "check" => Ok(HookType::Check),
+            "pre-deploy" => Ok(HookType::PreDeploy),
+            "post-deploy" => Ok(HookType::PostDeploy),
+            "terminate" => Ok(HookType::Terminate),
+            "addon" => Ok(HookType::Addon),
+            "cloud-config" => Ok(HookType::CloudConfig),
+            "runtime-config" => Ok(HookType::RuntimeConfig),
+            "cpi-config" => Ok(HookType::CpiConfig),
+            "edit" => Ok(HookType::Edit),
+            "shell" => Ok(HookType::Shell),
+            _ => Err(GenesisError::Validation(format!("Unknown hook type: {}", s))),
+        }
+    }
+}
+
 /// Manifest type variants representing different transformation stages.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ManifestType {

@@ -16,9 +16,9 @@ pub struct BoshConfig {
     /// CA certificate
     pub ca_cert: Option<String>,
     /// Client name
-    pub client: String,
+    pub client: Option<String>,
     /// Client secret
-    pub client_secret: String,
+    pub client_secret: Option<String>,
     /// Environment name
     pub environment: String,
 }
@@ -37,10 +37,14 @@ impl BoshClient {
         let base_url = Url::parse(&config.url)
             .map_err(|e| GenesisError::Bosh(format!("Invalid BOSH URL: {}", e)))?;
 
-        let auth_header = format!(
-            "Basic {}",
-            general_purpose::STANDARD.encode(format!("{}:{}", config.client, config.client_secret))
-        );
+        let auth_header = if let (Some(client), Some(secret)) = (&config.client, &config.client_secret) {
+            format!(
+                "Basic {}",
+                general_purpose::STANDARD.encode(format!("{}:{}", client, secret))
+            )
+        } else {
+            String::new()
+        };
 
         let mut builder = Client::builder()
             .timeout(Duration::from_secs(300));

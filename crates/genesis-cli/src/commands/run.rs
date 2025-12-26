@@ -4,7 +4,7 @@ use anyhow::{Result, Context, bail};
 use colored::Colorize;
 use genesis_types::{EnvName, HookType};
 use genesis_env::Environment;
-use genesis_kit::{DevKit, HookExecutor};
+use genesis_kit::{DevKit, HookExecutor, Kit};
 use std::str::FromStr;
 use std::collections::HashMap;
 

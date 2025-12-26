@@ -13,7 +13,16 @@ pub async fn check(status: bool) -> Result<()> {
     println!("{} Vault connectivity", "Checking".green().bold());
     println!("  URL: {}", vault_url.cyan());
 
-    let client = VaultClient::new(&vault_url, &vault_token)?;
+    let vault_config = genesis_services::vault::VaultConfig {
+        url: vault_url,
+        token: Some(vault_token),
+        insecure: false,
+        namespace: None,
+        strongbox: true,
+        mount: "/secret/".to_string(),
+        name: "default".to_string(),
+    };
+    let client = VaultClient::new(vault_config)?;
 
     match client.is_initialized().await {
         Ok(initialized) => {

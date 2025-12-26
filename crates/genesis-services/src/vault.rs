@@ -126,6 +126,48 @@ impl VaultClient {
         resp.json().await
             .map_err(|e| GenesisError::Vault(format!("Failed to parse response: {}", e)))
     }
+
+    /// Check if Vault is initialized.
+    pub async fn is_initialized(&self) -> Result<bool> {
+        #[derive(Deserialize)]
+        struct HealthResponse {
+            initialized: bool,
+        }
+
+        let url = self.base_url.join("/v1/sys/health")
+            .map_err(|e| GenesisError::Vault(format!("Invalid URL: {}", e)))?;
+
+        let resp = self.client.get(url)
+            .send()
+            .await
+            .map_err(|e| GenesisError::Vault(format!("Health check failed: {}", e)))?;
+
+        let health: HealthResponse = resp.json().await
+            .map_err(|e| GenesisError::Vault(format!("Failed to parse health response: {}", e)))?;
+
+        Ok(health.initialized)
+    }
+
+    /// Check if Vault is sealed.
+    pub async fn is_sealed(&self) -> Result<bool> {
+        #[derive(Deserialize)]
+        struct SealStatusResponse {
+            sealed: bool,
+        }
+
+        let url = self.base_url.join("/v1/sys/seal-status")
+            .map_err(|e| GenesisError::Vault(format!("Invalid URL: {}", e)))?;
+
+        let resp = self.client.get(url)
+            .send()
+            .await
+            .map_err(|e| GenesisError::Vault(format!("Seal status check failed: {}", e)))?;
+
+        let status: SealStatusResponse = resp.json().await
+            .map_err(|e| GenesisError::Vault(format!("Failed to parse seal status: {}", e)))?;
+
+        Ok(status.sealed)
+    }
 }
 
 #[async_trait]

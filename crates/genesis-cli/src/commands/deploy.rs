@@ -56,10 +56,11 @@ pub async fn execute(env_name: &str, dry_run: bool, no_secrets: bool, force: boo
         .context("BOSH_ENVIRONMENT not set")?;
 
     let bosh_config = genesis_services::bosh::BoshConfig {
-        url: bosh_url,
+        url: bosh_url.clone(),
         ca_cert: None,
         client: None,
         client_secret: None,
+        environment: bosh_url,
     };
     let bosh_client = BoshClient::new(bosh_config)?;
 

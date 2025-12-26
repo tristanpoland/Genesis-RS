@@ -12,10 +12,11 @@ pub async fn check(status: bool) -> Result<()> {
     println!("  URL: {}", bosh_url.cyan());
 
     let bosh_config = genesis_services::bosh::BoshConfig {
-        url: bosh_url,
+        url: bosh_url.clone(),
         ca_cert: None,
         client: None,
         client_secret: None,
+        environment: bosh_url,
     };
     let client = BoshClient::new(bosh_config)?;
 
