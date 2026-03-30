@@ -7,6 +7,9 @@ use anyhow::Result;
 #[command(name = "genesis")]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(about = "BOSH Deployment Lifecycle Manager", long_about = None)]
+#[command(arg_required_else_help = true)]
+#[command(color = clap::ColorChoice::Auto)]
+#[command(help_template = "{before-help}{name} {version}\n{about-with-newline}\n{usage-heading}\n    {usage}\n\n{all-args}{after-help}")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
