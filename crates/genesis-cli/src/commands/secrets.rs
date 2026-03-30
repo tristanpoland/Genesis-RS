@@ -14,7 +14,7 @@ use dialoguer::Confirm;
 pub async fn add(env_name: &str, force: bool) -> Result<()> {
     let env_name = EnvName::new(env_name).context("Invalid environment name")?;
 
-    println!("{} secrets for: {}", "Generating".green().bold(), env_name.to_string().cyan());
+    println!("{} {}", style::section("Generating secrets for"), env_name.to_string().cyan());
 
     let env_dir = std::path::Path::new(".").join(env_name.to_string());
     let env = Environment::load(&env_dir).context("Failed to load environment")?;
