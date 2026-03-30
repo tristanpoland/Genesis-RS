@@ -8,6 +8,7 @@ use genesis_kit::DevKit;
 use genesis_secrets::plan::SecretPlan;
 use genesis_types::VaultStore;
 use genesis_services::vault::VaultClient;
+use crate::ui::style;
 use dialoguer::Confirm;
 
 pub async fn add(env_name: &str, force: bool) -> Result<()> {
