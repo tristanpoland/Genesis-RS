@@ -23,12 +23,12 @@ pub async fn execute(name: &str, kit_name: Option<&str>, kit_version: Option<&st
     let version = if let Some(v) = kit_version {
         SemVer::parse(v).context("Invalid kit version")?
     } else {
-        println!("  Fetching latest version of {}...", kit_name);
+        println!("  {}", style::info(&format!("Fetching latest version of {}...", kit_name)));
         provider.latest_version(kit_name).await
             .context("Failed to fetch latest kit version")?
     };
 
-    println!("  Version: {}", version.to_string().cyan());
+    println!("  {}", style::success(&format!("Version: {}", version.to_string())));
 
     let kit_id = KitId {
         name: kit_name.to_string(),
