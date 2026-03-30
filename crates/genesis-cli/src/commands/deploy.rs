@@ -6,15 +6,15 @@ use genesis_types::EnvName;
 use genesis_env::{Environment, BoshDeployer, ExodusManager, Deployer};
 use genesis_kit::DevKit;
 use genesis_services::{vault::VaultClient, bosh::BoshClient};
-use crate::ui::progress;
+use crate::ui::{progress, style};
 
 pub async fn execute(env_name: &str, dry_run: bool, no_secrets: bool, force: bool) -> Result<()> {
     let env_name = EnvName::new(env_name).context("Invalid environment name")?;
 
-    println!("{} environment: {}", "Deploying".green().bold(), env_name.to_string().cyan());
+    println!("{} {}", style::section("Deploying"), env_name.to_string().cyan());
 
     if dry_run {
-        println!("  {} Dry run mode - no actual deployment", "→".yellow());
+        println!("  {}", style::warning("Dry run mode - no actual deployment"));
     }
 
     let env_dir = std::path::Path::new(".").join(env_name.to_string());
