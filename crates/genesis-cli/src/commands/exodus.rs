@@ -15,7 +15,8 @@ pub async fn export(env_name: &str, output: Option<&str>) -> Result<()> {
 
     let exodus_manager = ExodusManager::new(env.exodus_path());
 
-    let output_path = output.unwrap_or(&format!("{}-exodus.json", env_name));
+    let default_output = format!("{}-exodus.json", env_name);
+    let output_path = output.unwrap_or(&default_output);
 
     exodus_manager.export(&env_name, std::path::Path::new(output_path))?;
 

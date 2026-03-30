@@ -2,6 +2,5 @@
 rustflags = ["-C", "target-feature=+crt-static"]
 
 [env]
-# Use vcpkg OpenSSL (avoid building from source with Perl)
-VCPKG_ROOT = "C:\\Users\\redst\\vcpkg"
-OPENSSL_NO_VENDOR = "1"
+# Prefer vendored OpenSSL to avoid requiring local system install for CI and dev environments
+OPENSSL_NO_VENDOR = "0"

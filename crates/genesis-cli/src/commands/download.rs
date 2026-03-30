@@ -2,13 +2,13 @@
 
 use anyhow::{Result, Context};
 use colored::Colorize;
-use genesis_kit::{ProviderFactory, GenesisCommunityProvider};
+use genesis_kit::{ProviderFactory, GenesisCommunityProvider, KitProviderTrait};
 use crate::ui::progress;
 
 pub async fn execute(kit_name: &str, version: Option<&str>, output: &str) -> Result<()> {
     println!("{} kit: {}", "Downloading".green().bold(), kit_name.cyan());
 
-    let provider = GenesisCommunityProvider::new(None);
+    let provider = GenesisCommunityProvider::new(None)?;
 
     let install_dir = std::path::Path::new(output).join(".genesis").join("kits");
 

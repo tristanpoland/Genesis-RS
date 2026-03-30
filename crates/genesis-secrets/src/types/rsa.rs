@@ -2,8 +2,9 @@
 
 use genesis_types::{GenesisError, Result, SecretType};
 use genesis_types::traits::{Secret, ValidationResult};
-use openssl::pkey::{PKey, Private};
-use openssl::rsa::Rsa;
+use rand::rngs::OsRng;
+use rsa::{pkcs8::{EncodePrivateKey, EncodePublicKey, DecodePrivateKey}, RsaPrivateKey, RsaPublicKey};
+use rsa::traits::PublicKeyParts;
 use std::collections::HashMap;
 
 /// RSA key secret.
@@ -45,21 +46,21 @@ impl Secret for RsaSecret {
     }
 
     fn generate(&self) -> Result<HashMap<String, String>> {
-        let rsa = Rsa::generate(self.key_size)
+        let mut rng = OsRng;
+        let private_key = RsaPrivateKey::new(&mut rng, self.key_size as usize)
             .map_err(|e| GenesisError::Secret(format!("Failed to generate RSA key: {}", e)))?;
 
-        let private_key = PKey::from_rsa(rsa)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create private key: {}", e)))?;
+        let public_key = RsaPublicKey::from(&private_key);
 
-        let private_pem = private_key.private_key_to_pem_pkcs8()
+        let private_pem = private_key.to_pkcs8_pem(rsa::pkcs8::LineEnding::LF)
             .map_err(|e| GenesisError::Secret(format!("Failed to encode private key: {}", e)))?;
 
-        let public_pem = private_key.public_key_to_pem()
+        let public_pem = public_key.to_public_key_pem(rsa::pkcs8::LineEnding::LF)
             .map_err(|e| GenesisError::Secret(format!("Failed to encode public key: {}", e)))?;
 
         let mut result = HashMap::new();
-        result.insert("private".to_string(), String::from_utf8_lossy(&private_pem).to_string());
-        result.insert("public".to_string(), String::from_utf8_lossy(&public_pem).to_string());
+        result.insert("private".to_string(), private_pem.to_string());
+        result.insert("public".to_string(), public_pem.to_string());
 
         Ok(result)
     }
@@ -70,7 +71,8 @@ impl Secret for RsaSecret {
         }
 
         let private_pem = value.get("private").unwrap();
-        match PKey::private_key_from_pem(private_pem.as_bytes()) {
+
+        match RsaPrivateKey::from_pkcs8_pem(private_pem) {
             Ok(_) => Ok(ValidationResult::Ok),
             Err(e) => Ok(ValidationResult::Error(vec![
                 format!("Invalid RSA private key: {}", e)

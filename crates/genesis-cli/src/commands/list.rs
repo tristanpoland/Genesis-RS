@@ -2,13 +2,13 @@
 
 use anyhow::Result;
 use colored::Colorize;
-use genesis_kit::GenesisCommunityProvider;
+use genesis_kit::{GenesisCommunityProvider, KitProviderTrait};
 use walkdir::WalkDir;
 
 pub async fn kits(all: bool) -> Result<()> {
     println!("{} available kits", "Listing".green().bold());
 
-    let provider = GenesisCommunityProvider::new(None);
+    let provider = GenesisCommunityProvider::new(None)?;
 
     let common_kits = vec!["bosh", "cf", "concourse", "vault", "shield", "blacksmith"];
 

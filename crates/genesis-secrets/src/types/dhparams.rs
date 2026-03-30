@@ -2,7 +2,6 @@
 
 use genesis_types::{GenesisError, Result, SecretType};
 use genesis_types::traits::{Secret, ValidationResult};
-use openssl::dh::Dh;
 use std::collections::HashMap;
 
 /// DH parameters secret.
@@ -44,18 +43,9 @@ impl Secret for DhParamsSecret {
     }
 
     fn generate(&self) -> Result<HashMap<String, String>> {
-        tracing::info!("Generating DH parameters with {} bits (this may take a while)...", self.key_size);
-
-        let dh = Dh::generate_params(self.key_size, 2)
-            .map_err(|e| GenesisError::Secret(format!("Failed to generate DH params: {}", e)))?;
-
-        let pem = dh.params_to_pem()
-            .map_err(|e| GenesisError::Secret(format!("Failed to encode DH params: {}", e)))?;
-
-        let mut result = HashMap::new();
-        result.insert("dhparam-pem".to_string(), String::from_utf8_lossy(&pem).to_string());
-
-        Ok(result)
+        Err(GenesisError::Secret(
+            "DH parameter generation is not available in the no-OpenSSL build".to_string(),
+        ))
     }
 
     fn validate_value(&self, value: &HashMap<String, String>) -> Result<ValidationResult> {
@@ -64,11 +54,10 @@ impl Secret for DhParamsSecret {
         }
 
         let pem = value.get("dhparam-pem").unwrap();
-        match Dh::params_from_pem(pem.as_bytes()) {
-            Ok(_) => Ok(ValidationResult::Ok),
-            Err(e) => Ok(ValidationResult::Error(vec![
-                format!("Invalid DH parameters: {}", e)
-            ])),
+        if pem.contains("-----BEGIN DH PARAMETERS-----") {
+            Ok(ValidationResult::Ok)
+        } else {
+            Ok(ValidationResult::Error(vec!["Invalid DH parameters: unsupported format".to_string()]))
         }
     }
 

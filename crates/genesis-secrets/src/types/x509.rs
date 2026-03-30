@@ -2,17 +2,14 @@
 
 use genesis_types::{GenesisError, Result, SecretType};
 use genesis_types::traits::{Secret, ValidationResult};
-use async_trait::async_trait;
-use openssl::asn1::Asn1Time;
-use openssl::bn::{BigNum, MsbOption};
-use openssl::hash::MessageDigest;
-use openssl::pkey::{PKey, Private};
-use openssl::rsa::Rsa;
-use openssl::x509::{X509, X509Builder, X509NameBuilder, X509Extension};
-use openssl::x509::extension::{BasicConstraints, KeyUsage, SubjectAlternativeName};
+use rcgen::{Certificate, CertificateParams, DistinguishedName, DnType, IsCa, BasicConstraints, SanType, PKCS_RSA_SHA256, KeyPair};
+use rsa::{pkcs8::{EncodePrivateKey, DecodePrivateKey}, RsaPrivateKey};
+use rand::rngs::OsRng;
+use rsa::traits::PublicKeyParts;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::{Utc, Duration};
+use time::{OffsetDateTime, Duration as TimeDuration};
+use x509_parser::{pem::parse_x509_pem, parse_x509_certificate};
 
 /// X.509 certificate types.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -134,157 +131,70 @@ impl X509Secret {
         })
     }
 
-    fn generate_private_key(&self) -> Result<PKey<Private>> {
-        let rsa = Rsa::generate(self.key_size)
-            .map_err(|e| GenesisError::Secret(format!("Failed to generate RSA key: {}", e)))?;
-
-        PKey::from_rsa(rsa)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create private key: {}", e)))
+    fn generate_key_pair(&self) -> Result<RsaPrivateKey> {
+        let mut rng = OsRng;
+        RsaPrivateKey::new(&mut rng, self.key_size as usize)
+            .map_err(|e| GenesisError::Secret(format!("Failed to generate RSA key: {}", e)))
     }
 
-    fn build_name(&self) -> Result<openssl::x509::X509Name> {
-        let mut builder = X509NameBuilder::new()
-            .map_err(|e| GenesisError::Secret(format!("Failed to create name builder: {}", e)))?;
+    fn build_certificate_params(&self) -> Result<CertificateParams> {
+        let mut params = CertificateParams::new(vec![self.common_name.clone()]);
+        params.alg = &PKCS_RSA_SHA256;
 
-        builder.append_entry_by_text("CN", &self.common_name)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set CN: {}", e)))?;
-
+        let mut dn = DistinguishedName::new();
+        dn.push(DnType::CommonName, self.common_name.clone());
         if let Some(ref o) = self.organization {
-            builder.append_entry_by_text("O", o)
-                .map_err(|e| GenesisError::Secret(format!("Failed to set O: {}", e)))?;
+            dn.push(DnType::OrganizationName, o.clone());
         }
-
         if let Some(ref ou) = self.organizational_unit {
-            builder.append_entry_by_text("OU", ou)
-                .map_err(|e| GenesisError::Secret(format!("Failed to set OU: {}", e)))?;
+            dn.push(DnType::OrganizationalUnitName, ou.clone());
         }
-
         if let Some(ref c) = self.country {
-            builder.append_entry_by_text("C", c)
-                .map_err(|e| GenesisError::Secret(format!("Failed to set C: {}", e)))?;
+            dn.push(DnType::CountryName, c.clone());
         }
-
         if let Some(ref st) = self.state {
-            builder.append_entry_by_text("ST", st)
-                .map_err(|e| GenesisError::Secret(format!("Failed to set ST: {}", e)))?;
+            dn.push(DnType::StateOrProvinceName, st.clone());
         }
-
         if let Some(ref l) = self.locality {
-            builder.append_entry_by_text("L", l)
-                .map_err(|e| GenesisError::Secret(format!("Failed to set L: {}", e)))?;
+            dn.push(DnType::LocalityName, l.clone());
         }
-
-        Ok(builder.build())
-    }
-
-    fn generate_ca(&self, key: &PKey<Private>) -> Result<X509> {
-        let mut builder = X509Builder::new()
-            .map_err(|e| GenesisError::Secret(format!("Failed to create X509 builder: {}", e)))?;
-
-        builder.set_version(2)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set version: {}", e)))?;
-
-        let serial = BigNum::from_u32(1)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create serial: {}", e)))?;
-        let serial_asn1 = serial.to_asn1_integer()
-            .map_err(|e| GenesisError::Secret(format!("Failed to convert serial to ASN1: {}", e)))?;
-        builder.set_serial_number(&serial_asn1)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set serial number: {}", e)))?;
-
-        let name = self.build_name()?;
-        builder.set_subject_name(&name)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set subject: {}", e)))?;
-        builder.set_issuer_name(&name)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set issuer: {}", e)))?;
-
-        let not_before = Asn1Time::days_from_now(0)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create not_before: {}", e)))?;
-        let not_after = Asn1Time::days_from_now(self.validity_days as u32)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create not_after: {}", e)))?;
-
-        builder.set_not_before(&not_before)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set not_before: {}", e)))?;
-        builder.set_not_after(&not_after)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set not_after: {}", e)))?;
-
-        builder.set_pubkey(key)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set pubkey: {}", e)))?;
-
-        let basic_constraints = BasicConstraints::new()
-            .critical()
-            .ca()
-            .build()
-            .map_err(|e| GenesisError::Secret(format!("Failed to build basic constraints: {}", e)))?;
-        builder.append_extension(basic_constraints)
-            .map_err(|e| GenesisError::Secret(format!("Failed to append basic constraints: {}", e)))?;
-
-        let key_usage = KeyUsage::new()
-            .critical()
-            .key_cert_sign()
-            .crl_sign()
-            .build()
-            .map_err(|e| GenesisError::Secret(format!("Failed to build key usage: {}", e)))?;
-        builder.append_extension(key_usage)
-            .map_err(|e| GenesisError::Secret(format!("Failed to append key usage: {}", e)))?;
-
-        builder.sign(key, MessageDigest::sha256())
-            .map_err(|e| GenesisError::Secret(format!("Failed to sign certificate: {}", e)))?;
-
-        Ok(builder.build())
-    }
-
-    fn generate_self_signed(&self, key: &PKey<Private>) -> Result<X509> {
-        let mut builder = X509Builder::new()
-            .map_err(|e| GenesisError::Secret(format!("Failed to create X509 builder: {}", e)))?;
-
-        builder.set_version(2)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set version: {}", e)))?;
-
-        let serial = BigNum::from_u32(1)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create serial: {}", e)))?;
-        let serial_asn1 = serial.to_asn1_integer()
-            .map_err(|e| GenesisError::Secret(format!("Failed to convert serial to ASN1: {}", e)))?;
-        builder.set_serial_number(&serial_asn1)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set serial number: {}", e)))?;
-
-        let name = self.build_name()?;
-        builder.set_subject_name(&name)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set subject: {}", e)))?;
-        builder.set_issuer_name(&name)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set issuer: {}", e)))?;
-
-        let not_before = Asn1Time::days_from_now(0)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create not_before: {}", e)))?;
-        let not_after = Asn1Time::days_from_now(self.validity_days as u32)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create not_after: {}", e)))?;
-
-        builder.set_not_before(&not_before)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set not_before: {}", e)))?;
-        builder.set_not_after(&not_after)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set not_after: {}", e)))?;
-
-        builder.set_pubkey(key)
-            .map_err(|e| GenesisError::Secret(format!("Failed to set pubkey: {}", e)))?;
+        params.distinguished_name = dn;
 
         if !self.alternate_names.is_empty() {
-            let mut san = SubjectAlternativeName::new();
-            for name in &self.alternate_names {
-                if name.contains(':') {
-                    san.ip(name);
+            params.subject_alt_names = self.alternate_names.iter().filter_map(|name| {
+                if let Ok(addr) = name.parse() {
+                    Some(SanType::IpAddress(addr))
                 } else {
-                    san.dns(name);
+                    Some(SanType::DnsName(name.clone()))
                 }
-            }
-            let extension = san.build(&builder.x509v3_context(None, None))
-                .map_err(|e| GenesisError::Secret(format!("Failed to build SAN: {}", e)))?;
-            builder.append_extension(extension)
-                .map_err(|e| GenesisError::Secret(format!("Failed to append SAN: {}", e)))?;
+            }).collect();
         }
 
-        builder.sign(key, MessageDigest::sha256())
-            .map_err(|e| GenesisError::Secret(format!("Failed to sign certificate: {}", e)))?;
+        params.not_before = OffsetDateTime::now_utc();
+        params.not_after = OffsetDateTime::now_utc() + TimeDuration::days(self.validity_days);
 
-        Ok(builder.build())
+        params.is_ca = if self.cert_type == CertType::CA {
+            IsCa::Ca(BasicConstraints::Unconstrained)
+        } else {
+            IsCa::SelfSignedOnly
+        };
+
+        Ok(params)
+    }
+
+    fn make_certificate(&self) -> Result<Certificate> {
+        let mut params = self.build_certificate_params()?;
+
+        // rcgen doesn't support selecting RSA key size directly in params yet, so we manually generate.
+        let private_key = self.generate_key_pair()?;
+        let private_der = private_key.to_pkcs8_der()
+            .map_err(|e| GenesisError::Secret(format!("Failed to encode private key as PKCS8 DER: {}", e)))?;
+
+        params.key_pair = Some(KeyPair::from_der(private_der.as_bytes())
+            .map_err(|e| GenesisError::Secret(format!("Failed to create key pair: {}", e)))?);
+
+        Certificate::from_params(params)
+            .map_err(|e| GenesisError::Secret(format!("Failed to build certificate: {}", e)))
     }
 }
 
@@ -318,29 +228,23 @@ impl Secret for X509Secret {
     }
 
     fn generate(&self) -> Result<HashMap<String, String>> {
-        let key = self.generate_private_key()?;
-        let private_pem = key.private_key_to_pem_pkcs8()
-            .map_err(|e| GenesisError::Secret(format!("Failed to encode private key: {}", e)))?;
+        if self.cert_type == CertType::Signed {
+            return Err(GenesisError::Secret(
+                "Signed certificates require CA - not yet implemented in this path".to_string(),
+            ));
+        }
 
-        let cert = match self.cert_type {
-            CertType::CA => self.generate_ca(&key)?,
-            CertType::SelfSigned => self.generate_self_signed(&key)?,
-            CertType::Signed => {
-                return Err(GenesisError::Secret(
-                    "Signed certificates require CA - not yet implemented in this path".to_string()
-                ));
-            }
-        };
-
-        let cert_pem = cert.to_pem()
+        let cert = self.make_certificate()?;
+        let cert_pem = cert.serialize_pem()
             .map_err(|e| GenesisError::Secret(format!("Failed to encode certificate: {}", e)))?;
+        let private_pem = cert.serialize_private_key_pem();
 
         let mut result = HashMap::new();
-        result.insert("certificate".to_string(), String::from_utf8_lossy(&cert_pem).to_string());
-        result.insert("private".to_string(), String::from_utf8_lossy(&private_pem).to_string());
+        result.insert("certificate".to_string(), cert_pem.clone());
+        result.insert("private".to_string(), private_pem.clone());
 
         if self.cert_type == CertType::CA || self.cert_type == CertType::SelfSigned {
-            result.insert("ca".to_string(), String::from_utf8_lossy(&cert_pem).to_string());
+            result.insert("ca".to_string(), cert_pem);
         }
 
         Ok(result)
@@ -352,27 +256,25 @@ impl Secret for X509Secret {
         }
 
         let cert_pem = value.get("certificate").unwrap();
-        let cert = X509::from_pem(cert_pem.as_bytes())
+        let (_, pem) = parse_x509_pem(cert_pem.as_bytes())
             .map_err(|e| GenesisError::Secret(format!("Invalid certificate PEM: {}", e)))?;
 
-        let not_after = cert.not_after();
-        let now = Asn1Time::days_from_now(0)
-            .map_err(|e| GenesisError::Secret(format!("Failed to get current time: {}", e)))?;
+        let (_, cert) = parse_x509_certificate(&pem.contents)
+            .map_err(|e| GenesisError::Secret(format!("Invalid certificate DER: {}", e)))?;
 
-        let days_until_expiry = not_after.diff(&now)
-            .map_err(|e| GenesisError::Secret(format!("Failed to calculate expiry: {}", e)))?
-            .days;
+        let not_after = cert.tbs_certificate.validity.not_after;
+        let now = OffsetDateTime::now_utc();
+
+        let not_after_dt = not_after.to_datetime();
+
+        let days_until_expiry = (not_after_dt - now).whole_days();
 
         if days_until_expiry < 0 {
-            return Ok(ValidationResult::Error(vec![
-                "Certificate has expired".to_string()
-            ]));
+            return Ok(ValidationResult::Error(vec!["Certificate has expired".to_string()]));
         }
 
         if days_until_expiry < 30 {
-            return Ok(ValidationResult::Warning(vec![
-                format!("Certificate expires in {} days", days_until_expiry)
-            ]));
+            return Ok(ValidationResult::Warning(vec![format!("Certificate expires in {} days", days_until_expiry)]));
         }
 
         Ok(ValidationResult::Ok)

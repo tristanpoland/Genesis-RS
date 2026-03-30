@@ -3,7 +3,7 @@
 use anyhow::{Result, Context, bail};
 use colored::Colorize;
 use genesis_types::EnvName;
-use genesis_env::{Environment, BoshDeployer, ExodusManager};
+use genesis_env::{Environment, BoshDeployer, ExodusManager, Deployer};
 use genesis_kit::DevKit;
 use genesis_services::{vault::VaultClient, bosh::BoshClient};
 use crate::ui::progress;
@@ -46,9 +46,12 @@ pub async fn execute(env_name: &str, dry_run: bool, no_secrets: bool, force: boo
 
     let vault_config = genesis_services::vault::VaultConfig {
         url: vault_url,
-        token: vault_token,
+        token: Some(vault_token),
         namespace: None,
         insecure: false,
+        strongbox: false,
+        mount: "/secret/".to_string(),
+        name: "default".to_string(),
     };
     let vault_client = VaultClient::new(vault_config)?;
 

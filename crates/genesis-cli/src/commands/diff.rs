@@ -22,9 +22,12 @@ pub async fn execute(env1_name: &str, env2_name: &str) -> Result<()> {
     let vault_token = std::env::var("VAULT_TOKEN").context("VAULT_TOKEN not set")?;
     let vault_config = genesis_services::vault::VaultConfig {
         url: vault_url,
-        token: vault_token,
+        token: Some(vault_token),
         namespace: None,
         insecure: false,
+        strongbox: true,
+        mount: "/secret/".to_string(),
+        name: "default".to_string(),
     };
     let vault_client = VaultClient::new(vault_config)?;
 

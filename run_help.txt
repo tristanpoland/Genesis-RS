@@ -1,0 +1,419 @@
+warning: unused import: `LogLevel`
+ --> crates\genesis-core\src\log.rs:6:21
+  |
+6 | use genesis_types::{LogLevel, Result};
+  |                     ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Deserialize`
+ --> crates\genesis-core\src\util\data.rs:4:13
+  |
+4 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^
+
+warning: unused import: `Stdio`
+ --> crates\genesis-core\src\util\process.rs:4:29
+  |
+4 | use std::process::{Command, Stdio};
+  |                             ^^^^^
+
+warning: unused import: `std::time::Duration`
+ --> crates\genesis-core\src\util\process.rs:6:5
+  |
+6 | use std::time::Duration;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: `genesis-core` (lib) generated 4 warnings (run `cargo fix --lib -p genesis-core` to apply 4 suggestions)
+warning: unused import: `StatusCode`
+ --> crates\genesis-services\src\vault.rs:6:23
+  |
+6 | use reqwest::{Client, StatusCode};
+  |                       ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Serialize`
+ --> crates\genesis-services\src\vault.rs:7:26
+  |
+7 | use serde::{Deserialize, Serialize};
+  |                          ^^^^^^^^^
+
+warning: unused import: `StatusCode`
+ --> crates\genesis-services\src\bosh.rs:4:23
+  |
+4 | use reqwest::{Client, StatusCode};
+  |                       ^^^^^^^^^^
+
+warning: unused import: `SemVer`
+ --> crates\genesis-services\src\github.rs:3:43
+  |
+3 | use genesis_types::{GenesisError, Result, SemVer};
+  |                                           ^^^^^^
+
+warning: unused import: `url::Url`
+ --> crates\genesis-services\src\github.rs:7:5
+  |
+7 | use url::Url;
+  |     ^^^^^^^^
+
+warning: field `config` is never read
+  --> crates\genesis-services\src\bosh.rs:28:5
+   |
+27 | pub struct BoshClient {
+   |            ---------- field in this struct
+28 |     config: BoshConfig,
+   |     ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `DeployRequest` is never constructed
+   --> crates\genesis-services\src\bosh.rs:106:16
+    |
+106 |         struct DeployRequest {
+    |                ^^^^^^^^^^^^^
+
+warning: field `state` is never read
+   --> crates\genesis-services\src\bosh.rs:113:13
+    |
+111 |         struct TaskResponse {
+    |                ------------ field in this struct
+112 |             id: u64,
+113 |             state: String,
+    |             ^^^^^
+
+warning: field `id` is never read
+   --> crates\genesis-services\src\bosh.rs:138:17
+    |
+137 |             struct TaskStatus {
+    |                    ---------- field in this struct
+138 |                 id: u64,
+    |                 ^^
+
+warning: field `config` is never read
+  --> crates\genesis-services\src\credhub.rs:26:5
+   |
+25 | pub struct CredhubClient {
+   |            ------------- field in this struct
+26 |     config: CredhubConfig,
+   |     ^^^^^^
+
+warning: fields `cred_type`, `id`, and `name` are never read
+   --> crates\genesis-services\src\credhub.rs:325:5
+    |
+323 | struct CredentialEntry {
+    |        --------------- fields in this struct
+324 |     #[serde(rename = "type")]
+325 |     cred_type: String,
+    |     ^^^^^^^^^
+326 |     value: CredentialValue,
+327 |     id: String,
+    |     ^^
+328 |     name: String,
+    |     ^^^^
+    |
+    = note: `CredentialEntry` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: `genesis-services` (lib) generated 11 warnings (run `cargo fix --lib -p genesis-services` to apply 5 suggestions)
+   Compiling genesis-secrets v3.0.0 (E:\Documents\GitHub\Genesis-RS\crates\genesis-secrets)
+warning: unused import: `KitId`
+ --> crates\genesis-kit\src\provider.rs:4:43
+  |
+4 | use genesis_types::{GenesisError, Result, KitId, SemVer};
+  |                                           ^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `PathBuf`
+ --> crates\genesis-kit\src\provider.rs:6:23
+  |
+6 | use std::path::{Path, PathBuf};
+  |                       ^^^^^^^
+
+warning: unused import: `GenesisError`
+ --> crates\genesis-kit\src\hook.rs:3:21
+  |
+3 | use genesis_types::{GenesisError, Result, HookType};
+  |                     ^^^^^^^^^^^^
+
+warning: unused import: `GenesisError`
+ --> crates\genesis-kit\src\blueprint.rs:4:21
+  |
+4 | use genesis_types::{GenesisError, Result};
+  |                     ^^^^^^^^^^^^
+
+warning: unused import: `GenesisError`
+  --> crates\genesis-kit\src\lib.rs:34:21
+   |
+34 | use genesis_types::{GenesisError, Result, KitId};
+   |                     ^^^^^^^^^^^^
+
+warning: unused variable: `min_version`
+   --> crates\genesis-kit\src\compiled.rs:193:25
+    |
+193 |             if let Some(ref min_version) = prereq.version {
+    |                         ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_version`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `path` is never read
+  --> crates\genesis-kit\src\compiled.rs:15:5
+   |
+13 | pub struct CompiledKit {
+   |            ----------- field in this struct
+14 |     id: KitId,
+15 |     path: PathBuf,
+   |     ^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `genesis-kit` (lib) generated 7 warnings (run `cargo fix --lib -p genesis-kit` to apply 6 suggestions)
+warning: unused imports: `Deserialize` and `Serialize`
+ --> crates\genesis-secrets\src\types\ssh.rs:7:13
+  |
+7 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `GenesisError`
+ --> crates\genesis-secrets\src\types\uuid_secret.rs:3:21
+  |
+3 | use genesis_types::{GenesisError, Result, SecretType};
+  |                     ^^^^^^^^^^^^
+
+warning: unused import: `GenesisError`
+  --> crates\genesis-secrets\src\types\mod.rs:21:21
+   |
+21 | use genesis_types::{GenesisError, Result, SecretType};
+   |                     ^^^^^^^^^^^^
+
+warning: unused import: `ValidationResult`
+  --> crates\genesis-secrets\src\types\mod.rs:22:37
+   |
+22 | use genesis_types::traits::{Secret, ValidationResult};
+   |                                     ^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Deserialize` and `Serialize`
+  --> crates\genesis-secrets\src\types\mod.rs:23:13
+   |
+23 | use serde::{Deserialize, Serialize};
+   |             ^^^^^^^^^^^  ^^^^^^^^^
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+   --> crates\genesis-secrets\src\types\ssh.rs:106:60
+    |
+106 |         Ok(format!("ssh-rsa {} genesis-generated", base64::encode(&buf)))
+    |                                                            ^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+   --> crates\genesis-secrets\src\types\ssh.rs:139:41
+    |
+139 |         Ok(format!("SHA256:{}", base64::encode(&hash)))
+    |                                         ^^^^^^
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+  --> crates\genesis-secrets\src\types\random.rs:78:25
+   |
+78 |                 base64::encode(&bytes)
+   |                         ^^^^^^
+
+error[E0599]: no variant or associated item named `NoCa` found for enum `IsCa` in the current scope
+   --> crates\genesis-secrets\src\types\x509.rs:178:19
+    |
+178 |             IsCa::NoCa
+    |                   ^^^^ variant or associated item not found in `IsCa`
+
+error[E0308]: mismatched types
+    --> crates\genesis-secrets\src\types\x509.rs:192:57
+     |
+ 192 |         params.key_pair = Some(rcgen::KeyPair::from_der(&private_der)
+     |                                ------------------------ ^^^^^^^^^^^^ expected `&[u8]`, found `&SecretDocument`
+     |                                |
+     |                                arguments to this function are incorrect
+     |
+     = note: expected reference `&[u8]`
+                found reference `&SecretDocument`
+note: associated function defined here
+    --> C:\Users\redst\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rcgen-0.9.3\src\lib.rs:1437:9
+     |
+1437 |     pub fn from_der(der :&[u8]) -> Result<Self, RcgenError> {
+     |            ^^^^^^^^
+
+error[E0599]: no method named `map_err` found for struct `OffsetDateTime` in the current scope
+   --> crates\genesis-secrets\src\types\x509.rs:267:52
+    |
+267 |         let not_after_dt = not_after.to_datetime().map_err(|e| GenesisError::Secret(format!("Failed to parse certificate expiry: {}", e)))?;
+    |                                                    ^^^^^^^ method not found in `OffsetDateTime`
+
+error[E0599]: no function or associated item named `from_pkcs8_pem` found for struct `rsa::RsaPrivateKey` in the current scope
+   --> crates\genesis-secrets\src\types\ssh.rs:83:30
+    |
+ 83 |         match RsaPrivateKey::from_pkcs8_pem(private_pem) {
+    |                              ^^^^^^^^^^^^^^ function or associated item not found in `rsa::RsaPrivateKey`
+    |
+note: if you're trying to build a new `rsa::RsaPrivateKey` consider using one of the following associated functions:
+      rsa::RsaPrivateKey::new
+      rsa::RsaPrivateKey::new_with_exp
+      rsa::RsaPrivateKey::from_components
+      rsa::RsaPrivateKey::from_p_q
+      rsa::RsaPrivateKey::from_primes
+   --> C:\Users\redst\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rsa-0.9.10\src\key.rs:217:5
+    |
+217 |       pub fn new<R: CryptoRngCore + ?Sized>(rng: &mut R, bit_size: usize) -> Result<RsaPrivateKey> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+226 | /     pub fn new_with_exp<R: CryptoRngCore + ?Sized>(
+227 | |         rng: &mut R,
+228 | |         bit_size: usize,
+229 | |         exp: &BigUint,
+230 | |     ) -> Result<RsaPrivateKey> {
+    | |______________________________^
+...
+248 | /     pub fn from_components(
+249 | |         n: BigUint,
+250 | |         e: BigUint,
+251 | |         d: BigUint,
+252 | |         mut primes: Vec<BigUint>,
+253 | |     ) -> Result<RsaPrivateKey> {
+    | |______________________________^
+...
+287 |       pub fn from_p_q(p: BigUint, q: BigUint, public_exponent: BigUint) -> Result<RsaPrivateKey> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+301 |       pub fn from_primes(primes: Vec<BigUint>, public_exponent: BigUint) -> Result<RsaPrivateKey> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: items from traits can only be used if the trait is in scope
+help: trait `DecodePrivateKey` which provides `from_pkcs8_pem` is implemented but not in scope; perhaps you want to import it
+    |
+  3 + use rsa::pkcs8::DecodePrivateKey;
+    |
+help: there is an associated function `from_pkcs1_pem` with a similar name
+    |
+ 83 -         match RsaPrivateKey::from_pkcs8_pem(private_pem) {
+ 83 +         match RsaPrivateKey::from_pkcs1_pem(private_pem) {
+    |
+
+error[E0599]: no method named `e` found for reference `&rsa::RsaPublicKey` in the current scope
+   --> crates\genesis-secrets\src\types\ssh.rs:98:21
+    |
+ 98 |         let e = key.e().to_bytes_be();
+    |                     ^ private field, not a method
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: there is a method `eq` with a similar name, but with different arguments
+   --> C:\Users\redst\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib/rustlib/src/rust\library\core\src\cmp.rs:256:5
+    |
+256 |     fn eq(&self, other: &Rhs) -> bool;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: trait `PublicKeyParts` which provides `e` is implemented but not in scope; perhaps you want to import it
+    |
+  3 + use rsa::traits::PublicKeyParts;
+    |
+
+error[E0599]: no method named `n` found for reference `&rsa::RsaPublicKey` in the current scope
+  --> crates\genesis-secrets\src\types\ssh.rs:99:21
+   |
+99 |         let n = key.n().to_bytes_be();
+   |                     ^ private field, not a method
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `PublicKeyParts` which provides `n` is implemented but not in scope; perhaps you want to import it
+   |
+ 3 + use rsa::traits::PublicKeyParts;
+   |
+help: there is a method `e` with a similar name
+   |
+99 -         let n = key.n().to_bytes_be();
+99 +         let n = key.e().to_bytes_be();
+   |
+
+error[E0599]: no function or associated item named `from_pkcs8_pem` found for struct `rsa::RsaPrivateKey` in the current scope
+   --> crates\genesis-secrets\src\types\rsa.rs:74:30
+    |
+ 74 |         match RsaPrivateKey::from_pkcs8_pem(private_pem) {
+    |                              ^^^^^^^^^^^^^^ function or associated item not found in `rsa::RsaPrivateKey`
+    |
+note: if you're trying to build a new `rsa::RsaPrivateKey` consider using one of the following associated functions:
+      rsa::RsaPrivateKey::new
+      rsa::RsaPrivateKey::new_with_exp
+      rsa::RsaPrivateKey::from_components
+      rsa::RsaPrivateKey::from_p_q
+      rsa::RsaPrivateKey::from_primes
+   --> C:\Users\redst\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rsa-0.9.10\src\key.rs:217:5
+    |
+217 |       pub fn new<R: CryptoRngCore + ?Sized>(rng: &mut R, bit_size: usize) -> Result<RsaPrivateKey> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+226 | /     pub fn new_with_exp<R: CryptoRngCore + ?Sized>(
+227 | |         rng: &mut R,
+228 | |         bit_size: usize,
+229 | |         exp: &BigUint,
+230 | |     ) -> Result<RsaPrivateKey> {
+    | |______________________________^
+...
+248 | /     pub fn from_components(
+249 | |         n: BigUint,
+250 | |         e: BigUint,
+251 | |         d: BigUint,
+252 | |         mut primes: Vec<BigUint>,
+253 | |     ) -> Result<RsaPrivateKey> {
+    | |______________________________^
+...
+287 |       pub fn from_p_q(p: BigUint, q: BigUint, public_exponent: BigUint) -> Result<RsaPrivateKey> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+301 |       pub fn from_primes(primes: Vec<BigUint>, public_exponent: BigUint) -> Result<RsaPrivateKey> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: items from traits can only be used if the trait is in scope
+help: trait `DecodePrivateKey` which provides `from_pkcs8_pem` is implemented but not in scope; perhaps you want to import it
+    |
+  3 + use rsa::pkcs8::DecodePrivateKey;
+    |
+help: there is an associated function `from_pkcs1_pem` with a similar name
+    |
+ 74 -         match RsaPrivateKey::from_pkcs8_pem(private_pem) {
+ 74 +         match RsaPrivateKey::from_pkcs1_pem(private_pem) {
+    |
+
+error[E0382]: use of moved value: `cert_pem`
+   --> crates\genesis-secrets\src\types\x509.rs:246:45
+    |
+237 |         let cert_pem = cert.serialize_pem()
+    |             -------- move occurs because `cert_pem` has type `std::string::String`, which does not implement the `Copy` trait
+...
+242 |         result.insert("certificate".to_string(), cert_pem);
+    |                                                  -------- value moved here
+...
+246 |             result.insert("ca".to_string(), cert_pem);
+    |                                             ^^^^^^^^ value used here after move
+    |
+help: consider cloning the value if the performance cost is acceptable
+    |
+242 |         result.insert("certificate".to_string(), cert_pem.clone());
+    |                                                          ++++++++
+
+warning: unused variable: `public_pem`
+  --> crates\genesis-secrets\src\types\ssh.rs:64:13
+   |
+64 |         let public_pem = public_key.to_public_key_pem(rsa::pkcs8::LineEnding::LF)
+   |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_public_pem`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+  --> crates\genesis-secrets\src\parser.rs:30:25
+   |
+30 |                     let mut def_map: HashMap<String, Value> = def_obj.iter()
+   |                         ----^^^^^^^
+   |                         |
+   |                         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+Some errors have detailed explanations: E0308, E0382, E0599.
+For more information about an error, try `rustc --explain E0308`.
+warning: `genesis-secrets` (lib) generated 10 warnings
+error: could not compile `genesis-secrets` (lib) due to 8 previous errors; 10 warnings emitted

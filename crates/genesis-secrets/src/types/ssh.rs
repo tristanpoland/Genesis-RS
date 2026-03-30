@@ -2,8 +2,9 @@
 
 use genesis_types::{GenesisError, Result, SecretType};
 use genesis_types::traits::{Secret, ValidationResult};
-use openssl::pkey::{PKey, Private};
-use openssl::rsa::Rsa;
+use rand::rngs::OsRng;
+use rsa::{pkcs8::{EncodePrivateKey, EncodePublicKey, DecodePrivateKey}, RsaPrivateKey, RsaPublicKey};
+use rsa::traits::PublicKeyParts;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -52,24 +53,24 @@ impl Secret for SshSecret {
     }
 
     fn generate(&self) -> Result<HashMap<String, String>> {
-        let rsa = Rsa::generate(self.key_size)
+        let mut rng = OsRng;
+        let private_key = RsaPrivateKey::new(&mut rng, self.key_size as usize)
             .map_err(|e| GenesisError::Secret(format!("Failed to generate RSA key: {}", e)))?;
 
-        let private_key = PKey::from_rsa(rsa)
-            .map_err(|e| GenesisError::Secret(format!("Failed to create private key: {}", e)))?;
+        let public_key = RsaPublicKey::from(&private_key);
 
-        let private_pem = private_key.private_key_to_pem_pkcs8()
+        let private_pem = private_key.to_pkcs8_pem(rsa::pkcs8::LineEnding::LF)
             .map_err(|e| GenesisError::Secret(format!("Failed to encode private key: {}", e)))?;
 
-        let public_pem = private_key.public_key_to_pem()
+        let _public_pem = public_key.to_public_key_pem(rsa::pkcs8::LineEnding::LF)
             .map_err(|e| GenesisError::Secret(format!("Failed to encode public key: {}", e)))?;
 
-        let public_ssh = Self::convert_to_ssh_format(&private_key)?;
+        let public_ssh = Self::convert_to_ssh_format(&public_key)?;
 
         let mut result = HashMap::new();
-        result.insert("private".to_string(), String::from_utf8_lossy(&private_pem).to_string());
+        result.insert("private".to_string(), private_pem.to_string());
         result.insert("public".to_string(), public_ssh);
-        result.insert("fingerprint".to_string(), Self::calculate_fingerprint(&private_key)?);
+        result.insert("fingerprint".to_string(), Self::calculate_fingerprint(&public_key)?);
 
         Ok(result)
     }
@@ -80,7 +81,7 @@ impl Secret for SshSecret {
         }
 
         let private_pem = value.get("private").unwrap();
-        match PKey::private_key_from_pem(private_pem.as_bytes()) {
+        match RsaPrivateKey::from_pkcs8_pem(private_pem) {
             Ok(_) => Ok(ValidationResult::Ok),
             Err(e) => Ok(ValidationResult::Error(vec![
                 format!("Invalid SSH private key: {}", e)
@@ -94,12 +95,9 @@ impl Secret for SshSecret {
 }
 
 impl SshSecret {
-    fn convert_to_ssh_format(key: &PKey<Private>) -> Result<String> {
-        let rsa = key.rsa()
-            .map_err(|e| GenesisError::Secret(format!("Failed to get RSA key: {}", e)))?;
-
-        let e = rsa.e().to_vec();
-        let n = rsa.n().to_vec();
+    fn convert_to_ssh_format(key: &RsaPublicKey) -> Result<String> {
+        let e = key.e().to_bytes_be();
+        let n = key.n().to_bytes_be();
 
         let mut buf = Vec::new();
         Self::write_ssh_string(&mut buf, b"ssh-rsa");
@@ -129,14 +127,14 @@ impl SshSecret {
         }
     }
 
-    fn calculate_fingerprint(key: &PKey<Private>) -> Result<String> {
+    fn calculate_fingerprint(key: &RsaPublicKey) -> Result<String> {
         use sha2::{Sha256, Digest};
 
-        let public_pem = key.public_key_to_pem()
+        let public_pem = key.to_public_key_pem(rsa::pkcs8::LineEnding::LF)
             .map_err(|e| GenesisError::Secret(format!("Failed to encode public key: {}", e)))?;
 
         let mut hasher = Sha256::new();
-        hasher.update(&public_pem);
+        hasher.update(public_pem.as_bytes());
         let hash = hasher.finalize();
 
         Ok(format!("SHA256:{}", base64::encode(&hash)))

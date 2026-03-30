@@ -1,22 +1,24 @@
 //! Create a new environment.
 
 use anyhow::{Result, Context};
+use crate::ui::style;
 use colored::Colorize;
 use genesis_types::{EnvName, KitId, SemVer};
 use genesis_env::EnvironmentBuilder;
 use genesis_kit::{ProviderFactory, GenesisCommunityProvider};
+use genesis_kit::KitProviderTrait;
 use std::path::Path;
 
 pub async fn execute(name: &str, kit_name: Option<&str>, kit_version: Option<&str>) -> Result<()> {
     let env_name = EnvName::new(name)
         .context("Invalid environment name")?;
 
-    println!("{} environment: {}", "Creating".green().bold(), env_name.to_string().cyan());
+    println!("{} {}", style::section("Creating"), env_name.to_string().cyan());
 
     let kit_name = kit_name.unwrap_or("bosh");
-    println!("  Kit: {}", kit_name.cyan());
+    println!("  {}", style::info(&format!("Kit: {}", kit_name))); 
 
-    let provider = GenesisCommunityProvider::new(None);
+    let provider = GenesisCommunityProvider::new(None)?;
 
     let version = if let Some(v) = kit_version {
         SemVer::parse(v).context("Invalid kit version")?
