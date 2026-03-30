@@ -48,16 +48,16 @@ pub async fn add(env_name: &str, force: bool) -> Result<()> {
     //     genesis_secrets::parser::FromKit::parse(&secrets_json, &mut plan)?;
     // }
 
-    println!("  Found {} secrets to generate", plan.count());
+    println!("{}", style::info(&format!("Found {} secrets to generate", plan.count())));
 
     if plan.count() == 0 {
-        println!("{} No secrets to generate", "✓".green().bold());
+        println!("{}", style::success("No secrets to generate"));
         return Ok(());
     }
 
     plan.generate_missing().await?;
 
-    println!("{} Generated {} secrets", "✓".green().bold(), plan.count());
+    println!("{}", style::success(&format!("Generated {} secrets", plan.count())));
 
     Ok(())
 }
