@@ -23,6 +23,7 @@ pub use deployment::{
     DeploymentRecord,
     DeploymentStatus,
     DeploymentHistory,
+    DeployOptions,
 };
 
 use genesis_types::{GenesisError, Result};
@@ -60,9 +61,9 @@ impl EnvManager {
         env: &mut Environment,
         kit: &dyn genesis_kit::Kit,
         deployer: &dyn Deployer,
-        dry_run: bool,
+        options: &DeployOptions,
     ) -> Result<DeploymentRecord> {
-        deployer.deploy(env, kit, dry_run).await
+        deployer.deploy(env, kit, options).await
     }
 
     /// Delete a deployment.

@@ -4,7 +4,7 @@ use super::environment::Environment;
 use super::exodus::ExodusManager;
 use genesis_types::{GenesisError, Result};
 use genesis_kit::Kit;
-use genesis_services::{vault::VaultClient, bosh::BoshClient};
+use genesis_services::{vault::VaultClient, bosh::{BoshClient, BoshDeployOptions}};
 use genesis_secrets::plan::SecretPlan;
 use genesis_manifest::{ManifestBuilder, EntombedManifest};
 use async_trait::async_trait;
@@ -12,6 +12,25 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::{info, debug};
+
+/// Options controlling how a deployment is executed.
+#[derive(Debug, Clone, Default)]
+pub struct DeployOptions {
+    /// Show what would happen but don't deploy
+    pub dry_run: bool,
+    /// Skip confirmation prompts
+    pub yes: bool,
+    /// Recreate all VMs
+    pub recreate: bool,
+    /// Fix broken jobs / stemcells
+    pub fix_stemcells: bool,
+    /// Skip drain scripts on all instances
+    pub skip_drain: bool,
+    /// Number of canary instances
+    pub canaries: Option<u32>,
+    /// Max instances to update in parallel
+    pub max_in_flight: Option<u32>,
+}
 
 /// Deployment status.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -147,7 +166,7 @@ pub trait Deployer: Send + Sync {
         &self,
         env: &mut Environment,
         kit: &dyn Kit,
-        dry_run: bool,
+        options: &DeployOptions,
     ) -> Result<DeploymentRecord>;
 
     /// Delete a deployment.
@@ -283,7 +302,7 @@ impl Deployer for BoshDeployer {
         &self,
         env: &mut Environment,
         kit: &dyn Kit,
-        dry_run: bool,
+        options: &DeployOptions,
     ) -> Result<DeploymentRecord> {
         let deployment_id = uuid::Uuid::new_v4().to_string();
 
@@ -297,7 +316,7 @@ impl Deployer for BoshDeployer {
         let mut record = DeploymentRecord::new(&deployment_id, env, &manifest_hash);
         record.start();
 
-        if dry_run {
+        if options.dry_run {
             info!("Dry run mode - skipping actual deployment");
             record.succeed();
             return Ok(record);
@@ -305,7 +324,15 @@ impl Deployer for BoshDeployer {
 
         let deployment_name = env.deployment_name();
 
-        match self.bosh_client.deploy(&deployment_name, &manifest.content).await {
+        let bosh_opts = BoshDeployOptions {
+            recreate: options.recreate,
+            fix: options.fix_stemcells,
+            skip_drain: options.skip_drain,
+            canaries: options.canaries,
+            max_in_flight: options.max_in_flight,
+        };
+
+        match self.bosh_client.deploy(&deployment_name, &manifest.content, &bosh_opts).await {
             Ok(task_id) => {
                 record.bosh_task_id = Some(task_id.clone());
 

@@ -213,6 +213,14 @@ pub enum Commands {
         /// Skip confirmation prompt
         #[arg(short = 'y', long)]
         yes: bool,
+
+        /// Number of canary instances
+        #[arg(long)]
+        canaries: Option<u32>,
+
+        /// Max instances to update in parallel
+        #[arg(long)]
+        max_in_flight: Option<u32>,
     },
 
     /// Delete a BOSH deployment (without cleaning secrets)
@@ -821,8 +829,8 @@ impl Cli {
             Commands::Manifest { env, output, redacted, manifest_type: _, subset: _, list: _ } => {
                 manifest::execute(env, output.as_deref(), *redacted).await
             }
-            Commands::Deploy { env, dry_run, no_secrets, force, recreate: _, fix_stemcells: _, skip_drain: _, yes: _ } => {
-                deploy::execute(env, *dry_run, *no_secrets, *force).await
+            Commands::Deploy { env, dry_run, no_secrets, force, recreate, fix_stemcells, skip_drain, yes, canaries, max_in_flight } => {
+                deploy::execute(env, *dry_run, *no_secrets, *force, *yes, *recreate, *fix_stemcells, *skip_drain, *canaries, *max_in_flight).await
             }
             Commands::Delete { env, yes } => {
                 delete::execute(env, *yes).await

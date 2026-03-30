@@ -8,6 +8,21 @@ use std::time::Duration;
 use url::Url;
 use base64::{Engine as _, engine::general_purpose};
 
+/// Options controlling a BOSH deployment operation.
+#[derive(Debug, Clone, Default)]
+pub struct BoshDeployOptions {
+    /// Recreate all VMs (`bosh deploy --recreate`)
+    pub recreate: bool,
+    /// Fix broken jobs (`bosh deploy --fix`)
+    pub fix: bool,
+    /// Skip drain scripts (`bosh deploy --skip-drain`)
+    pub skip_drain: bool,
+    /// Number of canary instances
+    pub canaries: Option<u32>,
+    /// Max in-flight instances
+    pub max_in_flight: Option<u32>,
+}
+
 /// BOSH client configuration.
 #[derive(Debug, Clone)]
 pub struct BoshConfig {
@@ -101,17 +116,31 @@ impl BoshClient {
     }
 
     /// Deploy a manifest.
-    pub async fn deploy(&self, deployment_name: &str, manifest: &str) -> Result<String> {
-        #[derive(Serialize)]
-        struct DeployRequest {
-            manifest: String,
-        }
-
+    pub async fn deploy(
+        &self,
+        deployment_name: &str,
+        manifest: &str,
+        options: &BoshDeployOptions,
+    ) -> Result<String> {
         #[derive(Deserialize)]
         struct TaskResponse {
             id: u64,
             state: String,
         }
+
+        // Build query string for deployment options
+        let mut params: Vec<String> = Vec::new();
+        if options.recreate { params.push("recreate=true".to_string()); }
+        if options.fix { params.push("fix=true".to_string()); }
+        if options.skip_drain { params.push("skip_drain%5B%5D=*".to_string()); }
+        if let Some(c) = options.canaries { params.push(format!("canaries={}", c)); }
+        if let Some(m) = options.max_in_flight { params.push(format!("max_in_flight={}", m)); }
+
+        let path = if params.is_empty() {
+            "/deployments".to_string()
+        } else {
+            format!("/deployments?{}", params.join("&"))
+        };
 
         let body = serde_json::json!({
             "manifest": manifest,
@@ -122,7 +151,7 @@ impl BoshClient {
 
         let task: TaskResponse = self.request(
             reqwest::Method::POST,
-            "/deployments",
+            &path,
             Some(body),
         ).await?;
 

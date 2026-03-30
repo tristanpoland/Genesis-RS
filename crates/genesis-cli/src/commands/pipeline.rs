@@ -214,7 +214,7 @@ pub async fn ci_pipeline_deploy() -> Result<()> {
     std::env::set_current_dir(&working_dir)
         .context("Failed to change to working directory")?;
 
-    crate::commands::deploy::execute(&current_env, false, false, false).await
+    crate::commands::deploy::execute(&current_env, false, false, false, true, false, false, false, None, None).await
         .context("Deployment failed in CI context")?;
 
     Ok(())

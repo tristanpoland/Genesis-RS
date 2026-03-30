@@ -3,12 +3,23 @@
 use anyhow::{Result, Context, bail};
 use colored::Colorize;
 use genesis_types::EnvName;
-use genesis_env::{Environment, BoshDeployer, ExodusManager, Deployer};
+use genesis_env::{Environment, BoshDeployer, ExodusManager, Deployer, DeployOptions};
 use genesis_kit::DevKit;
 use genesis_services::{vault::VaultClient, bosh::BoshClient};
 use crate::ui::{progress, style};
 
-pub async fn execute(env_name: &str, dry_run: bool, no_secrets: bool, force: bool) -> Result<()> {
+pub async fn execute(
+    env_name: &str,
+    dry_run: bool,
+    no_secrets: bool,
+    force: bool,
+    yes: bool,
+    recreate: bool,
+    fix_stemcells: bool,
+    skip_drain: bool,
+    canaries: Option<u32>,
+    max_in_flight: Option<u32>,
+) -> Result<()> {
     let env_name = EnvName::new(env_name).context("Invalid environment name")?;
 
     println!("{} {}", style::section("Deploying"), env_name.to_string().cyan());
@@ -27,6 +38,30 @@ pub async fn execute(env_name: &str, dry_run: bool, no_secrets: bool, force: boo
 
     println!("  Kit: {} v{}", env.kit.name.cyan(), env.kit.version.to_string().cyan());
     println!("  Features: {}", env.features.join(", ").cyan());
+
+    if recreate {
+        println!("  {}", style::warning("--recreate: all VMs will be recreated"));
+    }
+    if fix_stemcells {
+        println!("  {}", style::warning("--fix: broken stemcells/jobs will be fixed"));
+    }
+    if skip_drain {
+        println!("  {}", style::warning("--skip-drain: drain scripts will be skipped"));
+    }
+
+    // Confirmation prompt (skip if --yes or --dry-run)
+    if !yes && !dry_run {
+        print!("  Deploy {} to {}? [y/N] ", env_name.to_string().cyan(), env.kit.name.cyan());
+        use std::io::{self, Write};
+        io::stdout().flush().ok();
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).context("Failed to read confirmation")?;
+        let input = input.trim().to_lowercase();
+        if input != "y" && input != "yes" {
+            println!("  {}", style::warning("Deployment cancelled."));
+            return Ok(());
+        }
+    }
 
     let kit_dir = env_dir.join(".genesis").join("kits").join(&env.kit.name);
     if !kit_dir.exists() {
@@ -60,9 +95,9 @@ pub async fn execute(env_name: &str, dry_run: bool, no_secrets: bool, force: boo
 
     let bosh_config = genesis_services::bosh::BoshConfig {
         url: bosh_url.clone(),
-        ca_cert: None,
-        client: None,
-        client_secret: None,
+        ca_cert: std::env::var("BOSH_CA_CERT").ok(),
+        client: std::env::var("BOSH_CLIENT").ok(),
+        client_secret: std::env::var("BOSH_CLIENT_SECRET").ok(),
         environment: bosh_url,
     };
     let bosh_client = BoshClient::new(bosh_config)?;
@@ -73,9 +108,19 @@ pub async fn execute(env_name: &str, dry_run: bool, no_secrets: bool, force: boo
     let deployer = BoshDeployer::new(bosh_client, vault_client)
         .with_exodus(exodus_manager);
 
+    let options = DeployOptions {
+        dry_run,
+        yes,
+        recreate,
+        fix_stemcells,
+        skip_drain,
+        canaries,
+        max_in_flight,
+    };
+
     let spinner = progress::spinner("Deploying to BOSH...");
 
-    let result = deployer.deploy(&mut env, &kit, dry_run).await;
+    let result = deployer.deploy(&mut env, &kit, &options).await;
 
     spinner.finish_and_clear();
 
