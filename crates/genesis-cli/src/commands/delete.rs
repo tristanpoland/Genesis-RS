@@ -5,12 +5,13 @@ use colored::Colorize;
 use genesis_types::EnvName;
 use genesis_env::{Environment, BoshDeployer, ExodusManager, Deployer};
 use genesis_services::{vault::VaultClient, bosh::BoshClient};
+use crate::ui::style;
 use dialoguer::Confirm;
 
 pub async fn execute(env_name: &str, yes: bool) -> Result<()> {
     let env_name = EnvName::new(env_name).context("Invalid environment name")?;
 
-    println!("{} deployment: {}", "Deleting".red().bold(), env_name.to_string().cyan());
+    println!("{} {}", style::section("Deleting"), env_name.to_string().cyan());
 
     let env_dir = std::path::Path::new(".").join(env_name.to_string());
     if !env_dir.exists() {
@@ -27,7 +28,7 @@ pub async fn execute(env_name: &str, yes: bool) -> Result<()> {
             .interact()?;
 
         if !confirmed {
-            println!("{}", "Cancelled".yellow());
+            println!("{}", style::warning("Cancelled"));
             return Ok(());
         }
     }
@@ -69,7 +70,7 @@ pub async fn execute(env_name: &str, yes: bool) -> Result<()> {
     deployer.delete(&env).await
         .context("Failed to delete deployment")?;
 
-    println!("{} Deployment deleted successfully", "✓".green().bold());
+    println!("{}", style::success("Deployment deleted successfully"));
 
     Ok(())
 }

@@ -82,15 +82,15 @@ pub async fn execute(env_name: &str, dry_run: bool, no_secrets: bool, force: boo
     match result {
         Ok(record) => {
             if record.is_success() {
-                println!("{} Deployment succeeded", "✓".green().bold());
+                println!("{}", style::success("Deployment succeeded"));
                 if let Some(task_id) = record.bosh_task_id {
-                    println!("  BOSH task ID: {}", task_id.cyan());
+                    println!("  {}", style::info(&format!("BOSH task ID: {}", task_id)));
                 }
                 if let Some(duration) = record.duration_secs {
-                    println!("  Duration: {}s", duration);
+                    println!("  {}", style::info(&format!("Duration: {}s", duration)));
                 }
             } else {
-                bail!("Deployment failed: {:?}", record.error);
+                bail!("{}", style::error(&format!("Deployment failed: {:?}", record.error)));
             }
         }
         Err(e) => {
