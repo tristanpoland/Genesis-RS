@@ -1,7 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "Bash(for crate:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $crate ===\")",
+      "Read(//mnt/e/Documents/GitHub/Genesis-RS/crates/$crate/**)",
+      "Bash(done)",
+      "Bash(find /mnt/e/Documents/GitHub/Genesis-RS/crates -type f -name \"*.rs\" -exec wc -l {} +)",
+      "Bash(sort -k2)",
+      "Bash(while read:*)",
+      "Bash(do echo:*)",
+      "Read(//mnt/e/Documents/GitHub/Genesis-RS/**)",
+      "Bash(grep \"\\\\.pm$\")",
+      "Bash(ls -d /mnt/e/Documents/GitHub/Genesis-RS/crates/*/Cargo.toml)",
+      "Bash(ls -d /mnt/e/Documents/GitHub/Genesis-RS/crates/*/)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(cargo check:*)"
     ]
   }
 }

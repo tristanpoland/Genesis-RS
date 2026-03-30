@@ -4,9 +4,9 @@ use anyhow::{Result, Context, bail};
 use colored::Colorize;
 use genesis_types::EnvName;
 use genesis_env::Environment;
-use genesis_kit::DevKit;
-use genesis_secrets::plan::SecretPlan;
+use genesis_kit::{DevKit, Kit};
 use genesis_types::VaultStore;
+use genesis_secrets::plan::SecretPlan;
 use genesis_services::vault::VaultClient;
 use crate::ui::style;
 use dialoguer::Confirm;
@@ -39,14 +39,16 @@ pub async fn add(env_name: &str, force: bool) -> Result<()> {
 
     let mut plan = SecretPlan::new(Box::new(vault_client.clone()), vault_prefix.clone());
 
-    // TODO: Parse secrets from kit - needs implementation
-    // For now, create an empty plan
-    // let secrets_file = kit.path().join("secrets.yml");
-    // if secrets_file.exists() {
-    //     let secrets_def = std::fs::read_to_string(secrets_file)?;
-    //     let secrets_json: serde_json::Value = serde_yaml::from_str(&secrets_def)?;
-    //     genesis_secrets::parser::FromKit::parse(&secrets_json, &mut plan)?;
-    // }
+    let secrets_file = kit.path().join("secrets.yml");
+    if secrets_file.exists() {
+        let secrets_yaml = std::fs::read_to_string(&secrets_file)
+            .context("Failed to read kit secrets.yml")?;
+        let secrets_value: serde_json::Value = serde_yaml::from_str(&secrets_yaml)
+            .context("Failed to parse kit secrets.yml")?;
+        let secrets_def = secrets_value.get("secrets").cloned().unwrap_or(secrets_value);
+        genesis_secrets::parser::FromKit::parse(&secrets_def, &mut plan)
+            .context("Failed to parse kit secrets")?;
+    }
 
     println!("{}", style::info(&format!("Found {} secrets to generate", plan.count())));
 
@@ -150,8 +152,16 @@ pub async fn rotate(env_name: &str, paths: Option<&Vec<String>>, yes: bool) -> R
 
     let mut plan = SecretPlan::new(Box::new(vault_client.clone()), vault_prefix.clone());
 
-    // TODO: Parse secrets from kit - needs implementation
-    // For now, create an empty plan
+    let secrets_file = kit.path().join("secrets.yml");
+    if secrets_file.exists() {
+        let secrets_yaml = std::fs::read_to_string(&secrets_file)
+            .context("Failed to read kit secrets.yml")?;
+        let secrets_value: serde_json::Value = serde_yaml::from_str(&secrets_yaml)
+            .context("Failed to parse kit secrets.yml")?;
+        let secrets_def = secrets_value.get("secrets").cloned().unwrap_or(secrets_value);
+        genesis_secrets::parser::FromKit::parse(&secrets_def, &mut plan)
+            .context("Failed to parse kit secrets")?;
+    }
 
     let rotate_paths = if let Some(paths) = paths {
         paths.clone()
@@ -194,10 +204,18 @@ pub async fn check(env_name: &str) -> Result<()> {
 
     let vault_prefix = env.vault_prefix();
 
-    let plan = SecretPlan::new(Box::new(vault_client.clone()), vault_prefix.clone());
+    let mut plan = SecretPlan::new(Box::new(vault_client.clone()), vault_prefix.clone());
 
-    // TODO: Parse secrets from kit - needs implementation
-    // For now, create an empty plan
+    let secrets_file = kit.path().join("secrets.yml");
+    if secrets_file.exists() {
+        let secrets_yaml = std::fs::read_to_string(&secrets_file)
+            .context("Failed to read kit secrets.yml")?;
+        let secrets_value: serde_json::Value = serde_yaml::from_str(&secrets_yaml)
+            .context("Failed to parse kit secrets.yml")?;
+        let secrets_def = secrets_value.get("secrets").cloned().unwrap_or(secrets_value);
+        genesis_secrets::parser::FromKit::parse(&secrets_def, &mut plan)
+            .context("Failed to parse kit secrets")?;
+    }
 
     let validation_results = plan.validate().await?;
 
